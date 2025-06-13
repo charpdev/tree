@@ -1,0 +1,72 @@
+private Set<Node> findShortestPathSet(Node clonedRoot, Set<Node> targetEntities) {
+    if (clonedRoot == null || targetEntities.isEmpty() || targetEntities.size() < 2) {
+        return new HashSet<>(targetEntities);
+    }
+
+    Queue<Node> queue = new LinkedList<>();
+    Map<Node, Node> parentMap = new HashMap<>();
+    Set<Node> visited = new HashSet<>();
+    Map<Node, Integer> distance = new HashMap<>();
+
+    queue.offer(clonedRoot);
+    visited.add(clonedRoot);
+    distance.put(clonedRoot, 0);
+
+    Map<Node, Integer> targetDistances = new HashMap<>();
+    Set<Node> foundTargets = new HashSet<>();
+
+    while (!queue.isEmpty()) {
+        Node current = queue.poll();
+        System.out.println("Processing node: " + current.getEntityName());
+
+        for (Node child : current.getChildren()) {
+            if (!visited.contains(child)) {
+                visited.add(child);
+                parentMap.put(child, current);
+                distance.put(child, distance.get(current) + 1);
+                queue.offer(child);
+                System.out.println("Added child to queue: " + child.getEntityName());
+                if (targetEntities.contains(child)) {
+                    foundTargets.add(child);
+                    targetDistances.put(child, distance.get(child));
+                }
+            }
+        }
+    }
+
+    Set<Node> shortestPath = new HashSet<>();
+    if (!foundTargets.isEmpty()) {
+        // Convert targets to list and sort by distance
+        List<Node> sortedTargets = new ArrayList<>(foundTargets);
+        sortedTargets.sort((n1, n2) -> targetDistances.get(n1).compareTo(targetDistances.get(n2)));
+
+        // Build path starting from root to each target, ensuring all are connected
+        for (Node target : sortedTargets) {
+            Node current = target;
+            Set<Node> tempPath = new HashSet<>();
+            while (current != null) {
+                tempPath.add(current);
+                if (shortestPath.contains(current)) break;
+                current = parentMap.get(current);
+            }
+            shortestPath.addAll(tempPath);
+        }
+
+        // Refine to include only the shortest path through all targets
+        Set<Node> finalPath = new HashSet<>();
+        Node current = sortedTargets.get(0); // Start with first target
+        finalPath.add(current);
+        while (current != null) {
+            current = parentMap.get(current);
+            if (current != null && (targetEntities.contains(current) || shortestPath.contains(current))) {
+                finalPath.add(current);
+            }
+        }
+        shortestPath = finalPath;
+    } else {
+        shortestPath.addAll(targetEntities);
+    }
+
+    System.out.println("Shortest path set: " + shortestPath.stream().map(Node::getEntityName).toList());
+    return shortestPath;
+}
